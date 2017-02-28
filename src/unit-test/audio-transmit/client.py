@@ -1,25 +1,30 @@
 import pyaudio
 import socket
 from threading import Thread
+import utils
 
 frames = []
 
 def udpStream():
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)    
-
     while True:
         if len(frames) > 0:
-            udp.sendto(frames.pop(0), ("127.0.0.1", 12345))
-
+            alpha = frames.pop(0)
+            udp.sendto(alpha, ("127.0.0.1", 12344))
     udp.close()
 
-def record(stream, CHUNK):    
+def record(stream, CHUNK):
     while True:
-        frames.append(stream.read(CHUNK))
+        alpha = stream.read(CHUNK)
+        # frames.append(alpha)
+        # frames.append(utils.reversed_string(alpha))
+        # frames.append(rotate(sxor(alpha), 200))
+        frames.append(utils.sxor(alpha))
 
 # if __name__ == "__main__":
-CHUNK = 1024
+
 FORMAT = pyaudio.paInt16
+CHUNK = 1024
 CHANNELS = 2
 RATE = 44100
 
