@@ -9,8 +9,7 @@ def udpStream():
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)    
     while True:
         if len(frames) > 0:
-            alpha = frames.pop(0)
-            udp.sendto(alpha, ("127.0.0.1", 12344))
+            udp.sendto(frames.pop(0), ("127.0.0.1", 12344))
     udp.close()
 
 def record(stream, CHUNK):

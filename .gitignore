@@ -92,3 +92,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# PyCharm
+.idea/
+.idea/dictionaries
+.idea/*.xml
+.idea/dictionaries/*.xml
+.idea/dictionaries/asparsh.xml
