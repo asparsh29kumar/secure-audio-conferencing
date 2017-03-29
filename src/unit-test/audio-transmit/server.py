@@ -6,7 +6,6 @@ import utils
 frames = []
 
 def udpStream(CHUNK):
-
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp.bind(("127.0.0.1", 12344))
 
@@ -27,6 +26,7 @@ def play(stream, CHUNK):
                 # stream.write(utils.reversed_string(alpha), CHUNK)
                 # stream.write(str(rotate(sxor(alpha, "7"*len(alpha), -200)), CHUNK))
                 stream.write(utils.sxor(alpha), CHUNK)
+                # stream.write(alpha, CHUNK)
 
 # if __name__ == "__main__":
 
