@@ -10,6 +10,7 @@ try:
 	server_ip_address = serversettings.SERVER_ADDRESS
 	server_port = serversettings.SERVER_PORT
 	server_address = (server_ip_address, server_port)
+	server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	server_socket.bind(server_address)
 	server_socket.listen(5)
 	# TODO Check if the socket is not None
@@ -19,7 +20,7 @@ try:
 		print "Accepted connection from address: " + str(accepted_address)
 		client_connections.append(accepted_connection)
 
-		server.facilitate_key_exchange(client_connections)
+		client_connections = server.facilitate_key_exchange(client_connections)
 
 	for connection in client_connections:
 		connection.close()
@@ -27,5 +28,3 @@ try:
 except Exception as e:
 	print "\nServer exception trace:\n" + e.message
 	raise
-
-# TODO Add heartbeat thread to reduce client_connections when client is killed.

@@ -7,9 +7,14 @@ import logging
 def key_exchange(socket):
 	try:
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
+		assert data == dhutils.CMD_HELLO, "Expected " + dhutils.CMD_HELLO + " , received " + data
+		socket.send(dhutils.CMD_ACK)
+		logging.info("Received hello command: %s", data)
+
+		data = socket.recv(dhutils.MAX_BUF_SIZE)
 		assert data == dhutils.CMD_BEGIN, "Expected " + dhutils.CMD_BEGIN + " , received " + data
 		socket.send(dhutils.CMD_ACK)
-		logging.info("Received command to begin: %s", data)
+		logging.info("Received begin command: %s", data)
 
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
 		socket.send(dhutils.CMD_ACK)
@@ -34,20 +39,20 @@ def key_exchange(socket):
 		original_base = dh_primitive_root
 		for i in range(connection_list_size - 1):
 			data = socket.recv(dhutils.MAX_BUF_SIZE)
-			logging.info("Received command to recycle (retrieve): %s", data)
+			logging.info("Received recycle (retrieve) command: %s", data)
 			assert data == dhutils.CMD_RECYCLE_RETRIEVE, "Expected " + dhutils.CMD_RECYCLE_RETRIEVE + ", received " + data
 			socket.send(dhutils.CMD_ACK)
 			logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)
 
 			data = socket.recv(dhutils.MAX_BUF_SIZE)
-			logging.info("Received command to request public key: %s", data)
+			logging.info("Received request public key command: %s", data)
 			assert data == dhutils.CMD_REQ_PUBLIC_KEY, "Expected " + dhutils.CMD_REQ_PUBLIC_KEY + ", received " + data
 			public_key = dhutils.exponent_with_modulo(original_base, private_key, dh_prime)
 			socket.send(str(public_key))
 			logging.info("Sent public key: %d", public_key)
 
 			data = socket.recv(dhutils.MAX_BUF_SIZE)
-			logging.info("Received command to recycle (reshare): %s", data)
+			logging.info("Received recycle (reshare) command: %s", data)
 			assert data == dhutils.CMD_RECYCLE_RESHARE, "Expected " + dhutils.CMD_RECYCLE_RESHARE + ", received " + data
 			socket.send(dhutils.CMD_ACK)
 			logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)

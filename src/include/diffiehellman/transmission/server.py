@@ -12,6 +12,21 @@ def facilitate_key_exchange(connection_list):
 		dh_primitive = dhutils.find_primitive(dh_prime)
 		logging.info("Calculated primitive root: %d", dh_primitive)
 
+		connection_list_alive = []
+		for connection in connection_list:
+			try:
+				connection.send(dhutils.CMD_HELLO)
+				logging.info("Sent hello command: %s", dhutils.CMD_HELLO)
+				data = connection.recv(dhutils.MAX_BUF_SIZE)
+				logging.debug("Received acknowledgement: %s", data)
+				if len(str(data)) == 0:
+					continue
+				assert data == dhutils.CMD_ACK, "Bad acknowledgement for " + dhutils.CMD_HELLO
+				connection_list_alive.append(connection)
+			except Exception as e:
+				logging.info("Ignore presumed connection with exception: %s", e.message)
+
+		connection_list = connection_list_alive
 		for connection in connection_list:
 			connection.send(dhutils.CMD_BEGIN)
 			logging.info("Sent begin command: %s", dhutils.CMD_BEGIN)
@@ -74,7 +89,7 @@ def facilitate_key_exchange(connection_list):
 				data = connection_list[neighbor_index].recv(dhutils.MAX_BUF_SIZE)
 				logging.debug("Received acknowledgement: %s", data)
 				assert data == dhutils.CMD_ACK, "Bad acknowledgement for sending a"
-
+		return connection_list
 	except AssertionError as e:
 		e.message += "\nCould not facilitate key exchange on the server"
 		# logging.warning(e.message)
