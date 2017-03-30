@@ -34,6 +34,7 @@ def play(stream, CHUNK):
                 # stream.write(utils.reversed_string(alpha), CHUNK)
                 # stream.write(str(rotate(sxor(alpha, "7"*len(alpha), -200)), CHUNK))
                 stream.write(utils.sxor(alpha), CHUNK)
+                # stream.write(alpha, CHUNK)
 
 def save():
     waveFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
