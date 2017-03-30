@@ -30,7 +30,7 @@ def Identity(v):
 init = [1, 2, 3, 4, 5, 6, 2, 8, 6, 0,
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 7,
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-		1, 3]
+		1, 2]
 
 def InitWELLRNG1024a():
 	global state_i, STATE, init, R
