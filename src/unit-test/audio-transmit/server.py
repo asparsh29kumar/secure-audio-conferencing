@@ -3,6 +3,7 @@ import socket
 from threading import Thread
 import utils
 import wave
+
 frames = []
 framesToSave = []
 
@@ -14,6 +15,7 @@ WAVE_OUTPUT_FILENAME = "serverFile.wav"
 
 p = pyaudio.PyAudio()
 
+
 def udpStream(CHUNK):
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp.bind(("127.0.0.1", 12344))
@@ -23,6 +25,7 @@ def udpStream(CHUNK):
         framesToSave.append(soundData)
         # print soundData
     udp.close()
+
 
 def play(stream, CHUNK):
     BUFFER = 10
@@ -36,6 +39,7 @@ def play(stream, CHUNK):
                 stream.write(utils.sxor(alpha), CHUNK)
                 # stream.write(alpha, CHUNK)
 
+
 def save():
     waveFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
     waveFile.setnchannels(CHANNELS)
@@ -45,17 +49,18 @@ def save():
         if len(framesToSave) > 0:
             waveFile.writeframes(b''.join(framesToSave.pop(0)))
 
+
 # if __name__ == "__main__":
 stream = p.open(format=FORMAT,
-                channels = CHANNELS,
-                rate = RATE,
-                output = True,
-                frames_per_buffer = CHUNK,
+                channels=CHANNELS,
+                rate=RATE,
+                output=True,
+                frames_per_buffer=CHUNK,
                 )
 
-Ts = Thread(target = udpStream, args=(CHUNK,))
-Tp = Thread(target = play, args=(stream, CHUNK,))
-TSave = Thread(target = save)
+Ts = Thread(target=udpStream, args=(CHUNK,))
+Tp = Thread(target=play, args=(stream, CHUNK,))
+TSave = Thread(target=save)
 Ts.setDaemon(True)
 Tp.setDaemon(True)
 TSave.setDaemon(True)
