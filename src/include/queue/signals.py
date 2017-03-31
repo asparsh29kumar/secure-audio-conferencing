@@ -1,0 +1,2 @@
+SIG_FINISH = "1"
+SIG_CHECKPOINT = "2"

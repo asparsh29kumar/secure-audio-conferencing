@@ -1,6 +1,8 @@
 import socket
 import struct
+
 multicast_group = '224.3.29.71'
+multicast = (multicast_group, 10000)
 server_address = ('', 10000)
 
 # Create the socket
@@ -15,15 +17,16 @@ mreq = struct.pack('=4sL', group, socket.INADDR_ANY)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 # Receive/respond loop
 while True:
-    print 'Waiting to receive message'
-    try:
-        data, address = sock.recvfrom(1024)
-    except socket.timeout:
-        print "Closing Receive Socket. Done here."
-        sock.close()
-        break
-    print 'received %s bytes from %s' % (len(data), address)
-    print data
-    print 'sending acknowledgement to', address
-    sock.sendto('ack', address)
-    sock.settimeout(1)
+	print 'Waiting to receive message'
+	try:
+		data, address = sock.recvfrom(1024)
+	except socket.timeout:
+		print "Closing Receive Socket. Done here."
+		sock.close()
+		break
+	print 'received %s bytes from %s' % (len(data), address)
+	print data
+	print 'sending acknowledgement to', address
+	# sock.sendto('ack', address)
+	sock.sendto('ack', multicast)
+	sock.settimeout(1)

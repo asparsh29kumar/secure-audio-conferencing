@@ -8,28 +8,33 @@ def key_exchange(socket):
 	try:
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
 		assert data == dhutils.CMD_HELLO, "Expected " + dhutils.CMD_HELLO + " , received " + data
-		socket.send(dhutils.CMD_ACK)
 		logging.info("Received hello command: %s", data)
+		socket.send(dhutils.CMD_ACK)
+		logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)
 
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
+		logging.info("Received begin command: %s", data)
 		assert data == dhutils.CMD_BEGIN, "Expected " + dhutils.CMD_BEGIN + " , received " + data
 		socket.send(dhutils.CMD_ACK)
-		logging.info("Received begin command: %s", data)
+		logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)
 
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
-		socket.send(dhutils.CMD_ACK)
 		connection_list_size = int(data)
 		logging.info("Received number of connections server is currently handling: %d", connection_list_size)
+		socket.send(dhutils.CMD_ACK)
+		logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)
 
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
-		socket.send(dhutils.CMD_ACK)
 		dh_prime = int(data)
 		logging.info("Received prime value: %d", dh_prime)
+		socket.send(dhutils.CMD_ACK)
+		logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)
 
 		data = socket.recv(dhutils.MAX_BUF_SIZE)
-		socket.send(dhutils.CMD_ACK)
 		dh_primitive_root = int(data)
 		logging.info("Received primitive root: %d", dh_primitive_root)
+		socket.send(dhutils.CMD_ACK)
+		logging.debug("Sent acknowledgement: %s", dhutils.CMD_ACK)
 
 		private_key = randint(dhutils.PRIVATE_KEY_MIN_VAL, dh_prime)
 		logging.info("Generated private key: %d", private_key)
@@ -74,4 +79,5 @@ def key_exchange(socket):
 		logging.debug("Sent no-acknowledgement: %s", dhutils.CMD_NACK)
 		e.message += "\nCould not perform key exchange on this client"
 		# logging.warning(e.message)
+		# TODO handle a crashed server elegantly.
 		raise

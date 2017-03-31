@@ -1,24 +1,35 @@
-import socket
-from include.diffiehellman.transmission import client, serversettings
 import logging
+from multiprocessing import Process, Queue
+from include.queue import signals
+from include.process import key_exchange_client as ke
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s: %(asctime)s %(message)s',
+					datefmt='%m/%d/%Y %I:%M:%S %p',
+					level=logging.DEBUG)
 
 try:
-	client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	server_socket_address = serversettings.SERVER_ADDRESS
-	server_socket_port = serversettings.SERVER_PORT
-	# TODO Check if the socket is not None
-	server = (server_socket_address, server_socket_port)
-	client_socket.connect(server)
+	queue_key_exchange = Queue()
+	queue_key_exchange_signaller = Queue()
+	process_key_exchange = Process(target=ke.handle_server_connection,
+								   args=(queue_key_exchange, queue_key_exchange_signaller))
+	process_key_exchange.start()
 
-	logging.info("Client IP address: " + str(client_socket.getsockname()[0]) + ":" + str(client_socket.getsockname()[1]))
-	logging.info("Server IP address: " + str(client_socket.getpeername()[0]) + ":" + str(client_socket.getpeername()[1]))
-
-	while True:
-		shared_secret = client.key_exchange(client_socket)
+	countdown = 3
+	iterate_flag = True
+	while iterate_flag:
+		logging.debug("Waiting to receive data from <key exchange> queue")
+		shared_secret = queue_key_exchange.get(block=True)
 		print "Calculated shared secret: " + str(shared_secret)
+		countdown -= 1
+		if countdown <= 0:
+			iterate_flag = False
 
-	client_socket.close()
+	logging.debug("Signalling process to end")
+	queue_key_exchange_signaller.put(signals.SIG_FINISH)
+	process_key_exchange.join()
+	queue_key_exchange_signaller.close()
+	queue_key_exchange.close()
+	print "Exiting client"
 except Exception as e:
 	print "\nClient exception trace:\n" + e.message
+	raise

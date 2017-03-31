@@ -21,6 +21,7 @@ def udpStream():
             udp.sendto(frames.pop(0), ("127.0.0.1", 12344))
     udp.close()
 
+
 def record(stream, CHUNK):
     while True:
         alpha = stream.read(CHUNK)

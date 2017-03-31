@@ -13,23 +13,23 @@ sock.settimeout(0.2)
 # ttl = struct.pack('b', 1)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
 try:
-    # Send data to the multicast group
-    print "Enter message to send :",
-    message = raw_input()
-    print 'sending "%s"' % message
-    sent = sock.sendto(message, multicast)
+	# Send data to the multicast group
+	print "Enter message to send :",
+	message = raw_input()
+	print 'sending "%s"' % message
+	sent = sock.sendto(message, multicast)
 
-    # Look for responses from all recipients
-    while True:
-        print 'waiting to receive'
-        try:
-            data, server = sock.recvfrom(16)
-        except socket.timeout:
-            print 'timed out, no more responses'
-            break
-        else:
-            print 'received "%s" from %s' % (data, server)
+	# Look for responses from all recipients
+	while True:
+		print 'waiting to receive'
+		try:
+			data, server = sock.recvfrom(16)
+		except socket.timeout:
+			print 'timed out, no more responses'
+			break
+		else:
+			print 'received "%s" from %s' % (data, server)
 
 finally:
-    print 'closing socket'
-    sock.close()
+	print 'closing socket'
+	sock.close()
