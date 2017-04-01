@@ -3,7 +3,7 @@ from threading import Thread
 from Queue import Queue
 from thread.stream_audio import udp_send_audio
 from thread.utils import save_audio
-from ..queue import signals
+from ..queue import signals, utils
 
 FORMAT = pyaudio.paInt16
 CHUNK = 1024
@@ -17,7 +17,6 @@ def handle_audio_delivery(queue, signal_queue):
 	queue__send_audio_signaller = Queue()
 	queue__save_audio = Queue()
 	queue__save_audio_signaller = Queue()
-
 	queue__frames_to_save = Queue()
 
 	p = pyaudio.PyAudio()
@@ -41,10 +40,17 @@ def handle_audio_delivery(queue, signal_queue):
 	queue__send_audio_signaller.put(signals.SIG_FINISH)
 	queue__save_audio_signaller.put(signals.SIG_FINISH)
 
+	utils.clear_queue(queue__save_audio)
+	utils.clear_queue(queue__save_audio_signaller)
+	utils.clear_queue(queue__send_audio)
+	utils.clear_queue(queue__send_audio_signaller)
+	utils.clear_queue(queue__frames_to_save)
+
 	queue__save_audio_signaller.join()
 	queue__send_audio_signaller.join()
 	queue__save_audio.join()
 	queue__send_audio.join()
+	queue__frames_to_save.join()
 
 	thread_send_audio.join()
 	thread_save_audio.join()

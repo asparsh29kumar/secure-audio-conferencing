@@ -4,7 +4,7 @@ from threading import Thread
 from Queue import Queue
 from thread.stream_audio import udp_receive_audio, play_audio
 from thread.utils import save_audio
-from ..queue import signals
+from ..queue import signals, utils
 
 # TODO Add these in a settings file.
 FORMAT = pyaudio.paInt16
@@ -24,7 +24,6 @@ def handle_audio_receipt(queue, signal_queue):
 	queue__play_audio_signaller = Queue()
 	queue__save_audio = Queue()
 	queue__save_audio_signaller = Queue()
-
 	queue__frames_to_play = Queue()
 	queue__frames_to_save = Queue()
 
@@ -54,6 +53,15 @@ def handle_audio_receipt(queue, signal_queue):
 	queue__receive_audio_signaller.put(signals.SIG_FINISH)
 	queue__play_audio_signaller.put(signals.SIG_FINISH)
 	queue__save_audio_signaller.put(signals.SIG_FINISH)
+
+	utils.clear_queue(queue__frames_to_play)
+	utils.clear_queue(queue__frames_to_save)
+	utils.clear_queue(queue__receive_audio_signaller)
+	utils.clear_queue(queue__play_audio_signaller)
+	utils.clear_queue(queue__save_audio_signaller)
+	utils.clear_queue(queue__receive_audio)
+	utils.clear_queue(queue__play_audio)
+	utils.clear_queue(queue__save_audio)
 
 	queue__frames_to_play.join()
 	queue__frames_to_save.join()

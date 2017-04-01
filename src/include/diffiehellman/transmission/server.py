@@ -9,7 +9,7 @@ def facilitate_key_exchange(connection_list):
 		dh_prime = dhutils.get_next_prime(randint(dhutils.PRIMES_LOWER_BOUND, dhutils.PRIMES_UPPER_BOUND))
 		logging.info("Calculated prime value: %d", dh_prime)
 
-		dh_primitive = dhutils.find_primitive(dh_prime)
+		dh_primitive = dhutils.get_closest_primitive_root(dh_prime)
 		logging.info("Calculated primitive root: %d", dh_primitive)
 
 		connection_list_alive = []

@@ -1,7 +1,7 @@
 import logging
 import socket
 from ..diffiehellman.transmission import server, serversettings
-from ..queue import signals
+from ..queue import signals, utils
 
 
 def handle_client_connections(queue, signal_queue):
@@ -26,4 +26,5 @@ def handle_client_connections(queue, signal_queue):
 	assert signal_queue_data == signals.SIG_FINISH
 	for connection in client_connections:
 		connection.close()
+	utils.clear_queue(signal_queue)
 	server_socket.close()

@@ -1,6 +1,6 @@
 import logging
 from multiprocessing import Process, Queue
-from include.queue import signals
+from include.queue import signals, utils as q_utils
 from include.process import key_exchange_client as ke, audio_client
 
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(message)s',
@@ -38,6 +38,10 @@ try:
 	queue__audio_delivery_signaller.put(signals.SIG_FINISH)
 	process__key_exchange.join()
 	process__audio_delivery.join()
+	q_utils.clear_queue(queue__key_exchange)
+	q_utils.clear_queue(queue__key_exchange_signaller)
+	q_utils.clear_queue(queue__audio_delivery)
+	q_utils.clear_queue(queue__audio_delivery_signaller)
 	queue__key_exchange_signaller.close()
 	queue__key_exchange.close()
 	queue__audio_delivery_signaller.close()
