@@ -18,7 +18,8 @@ def handle_server_connection(queue, signal_queue):
 		"Server IP address: " + str(client_socket.getpeername()[0]) + ":" + str(client_socket.getpeername()[1]))
 
 	while signal_queue.empty():
-		queue.put(client.key_exchange(client_socket))
+		secret_key = client.key_exchange(client_socket)
+		queue.put(secret_key)
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	client_socket.close()
