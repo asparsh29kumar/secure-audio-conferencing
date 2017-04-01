@@ -28,6 +28,8 @@ try:
 		logging.debug("Waiting to receive data from <key_exchanges> queue")
 		queue_data = queue__key_exchanges.get(block=True)
 		assert queue_data == signals.SIG_CHECKPOINT
+		participant_count = queue__key_exchanges.get(block=True)
+		queue__audio_receiver.put(participant_count)
 		countdown -= 1
 		if countdown <= 0:
 			iterate_flag = False

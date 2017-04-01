@@ -1,14 +1,16 @@
 import logging
 import wave
+import pyaudio
 from ...queue import signals, utils as q_utils
+from ...config import audio as audio_config
 
 
-def save_audio(queue, signal_queue, file_name, channels, channel_format, channel_rate, p, queue__frames_to_save):
+def save_audio(queue, signal_queue, file_name, queue__frames_to_save):
 	logging.debug("About to start saving audio")
 	wave_file = wave.open(file_name, 'wb')
-	wave_file.setnchannels(channels)
-	wave_file.setsampwidth(p.get_sample_size(channel_format))
-	wave_file.setframerate(channel_rate)
+	wave_file.setnchannels(audio_config.CHANNELS)
+	wave_file.setsampwidth(pyaudio.PyAudio().get_sample_size(audio_config.FORMAT))
+	wave_file.setframerate(audio_config.RATE)
 	while signal_queue.empty():
 		if not queue__frames_to_save.empty():
 			wave_file.writeframes(b''.join(queue__frames_to_save.get(block=True)))
