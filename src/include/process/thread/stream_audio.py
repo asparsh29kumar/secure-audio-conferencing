@@ -40,6 +40,7 @@ def udp_receive_audio(queue, signal_queue, queue__frames_to_play, queue__frames_
 
 
 def play_audio(queue, signal_queue, queue__frames_to_play, queue__participant_count):
+	# TODO Clean up pyaudio streams. Refer to </unit-test/wav_merge/record.py>
 	logging.debug("About to start playing audio")
 	p = pyaudio.PyAudio()
 	stream = p.open(format=audio_config.FORMAT, channels=audio_config.CHANNELS,
