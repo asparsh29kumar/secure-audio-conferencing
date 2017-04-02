@@ -1,8 +1,9 @@
 import logging
 import socket
 import pyaudio
+from unittest import signals
+from pydub import AudioSegment
 from Queue import Queue
-# import numpy
 from ...config import server as server_config, audio as audio_config
 from ...encrypt import utils
 from ...queue import signals, utils as q_utils
@@ -25,25 +26,47 @@ def udp_send_audio(queue, signal_queue, queue__frames_to_save=None):
 	udp.close()
 
 
-def udp_receive_audio(queue, signal_queue, queue__frames_to_play, queue__frames_to_save=None):
+def udp_receive_audio(queue, signal_queue, dict_queue__incoming_frames):
+	logging.debug("Type of signal_queue: %s", type(signal_queue))
 	logging.debug("About to start streaming UDP")
-	dict_queue__incoming_frames = {}
 	udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	udp.bind((server_config.SERVER_AUDIO_RECEIPT__ADDRESS, server_config.SERVER_AUDIO_RECEIPT__PORT))
 	while signal_queue.empty():
 		sound_data, address = udp.recvfrom(audio_config.CHUNK * audio_config.CHANNELS * 2)
 		if address not in dict_queue__incoming_frames.keys():
 			dict_queue__incoming_frames[address] = Queue()
-
+			# logging.debug("Type of new incoming address: %s", type(dict_queue__incoming_frames[address]))
 		dict_queue__incoming_frames[address].put(sound_data)
 
-		if queue__frames_to_play is not None:
-			queue__frames_to_play.put(sound_data)
-		if queue__frames_to_save is not None:
-			queue__frames_to_save.put(sound_data)
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	udp.close()
+
+
+def mix_audio(queue, signal_queue, dict_queue__incoming_frames, queue__frames_to_play, queue__frames_to_save):
+	logging.debug("About to mix audio streams")
+	while signal_queue.empty():
+		# playback.play(AudioSegment.from_file("./clientFile.wav"))
+		if len(dict_queue__incoming_frames) > 0:
+			sliced_audio_segments = []
+			i = 0
+			for index in range(len(dict_queue__incoming_frames)):
+				# logging.debug("Type of dict_queue__incoming_frames[index]: %s", type(dict_queue__incoming_frames.values()[index]))
+				# if not dict_queue__incoming_frames.values()[index].empty():
+				sliced_audio_segments.append(AudioSegment(
+					data=dict_queue__incoming_frames.values()[index].get(block=True),
+					sample_width=pyaudio.PyAudio().get_sample_size(format=audio_config.FORMAT),
+					frame_rate=audio_config.RATE,
+					channels=audio_config.CHANNELS))
+				i += 1
+			merged = sliced_audio_segments[0]
+
+			for index in range(1,i):
+				merged = merged.overlay(sliced_audio_segments[index])
+			queue__frames_to_play.put(merged)
+			queue__frames_to_save.put(merged)
+	signal_data = signal_queue.get(block=True)
+	assert signal_data == signals.SIG_FINISH
 
 
 def play_audio(queue, signal_queue, queue__frames_to_play, queue__participant_count):
@@ -57,16 +80,10 @@ def play_audio(queue, signal_queue, queue__frames_to_play, queue__participant_co
 		while queue__participant_count.empty() and signal_queue.empty():
 			if not queue__frames_to_play.empty():
 				alpha = queue__frames_to_play.get(block=True)
-				stream.write(utils.sxor(alpha), audio_config.CHUNK)
+				# TODO Figure out when and where to decrypt the audio segments.
+				stream.write(utils.sxor(alpha.raw_data), audio_config.CHUNK)
 			else:
 				stream.write(chr(128) * audio_config.CHUNK * 4, audio_config.CHUNK)
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	q_utils.clear_queue(queue__frames_to_play)
-
-
-# def merge_audio_chunks(queue, participant_count):
-# 	new_data = 0
-# 	for i in range(participant_count):
-# 		new_data += numpy.fromstring(queue.get(block=True), numpy.int16) * (1.0/participant_count)
-# 	return new_data.tostring()
