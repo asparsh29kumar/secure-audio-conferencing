@@ -13,6 +13,8 @@ def handle_audio_delivery(queue, signal_queue):
 	queue__save_audio_signaller = Queue()
 	queue__frames_to_save = Queue()
 
+	# TODO Bug! When a client vanishes, the audio feed is bad.
+
 	thread_send_audio = Thread(target=udp_send_audio,
 							   args=(queue__send_audio, queue__send_audio_signaller, queue__frames_to_save))
 	thread_save_audio = Thread(target=save_audio__old,

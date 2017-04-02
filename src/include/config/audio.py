@@ -3,8 +3,9 @@ import pyaudio
 FORMAT = pyaudio.paInt16
 CHUNK = 1024
 CHANNELS = 2
+RATE = 193939
 # RATE = 88200
-RATE = 44100
+# RATE = 44100
 # RATE = 16000
 WAVE_OUTPUT_FILENAME__RECEIVER = "serverFile.wav"
 WAVE_OUTPUT_FILENAME__SENDER = "clientFile.wav"

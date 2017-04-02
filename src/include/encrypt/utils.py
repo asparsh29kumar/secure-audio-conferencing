@@ -6,8 +6,7 @@ def rotate(l, n):
 	return l[n:] + l[:n]
 
 
-# TODO Rename me.
-def sxor(s1):
+def string_xor(s1):
 	b1 = bytearray(s1)
 	# b2 = bytearray(s2)
 	b = bytearray(len(s1))
@@ -17,4 +16,12 @@ def sxor(s1):
 		b[i] = b1[i] ^ 0
 	return str(b)
 
-# TODO Create individual functions to encrypt and decrypt. Let them call sxor.
+
+def encrypt(s1):
+	return string_xor(s1)
+
+
+def decrypt(s1):
+	return string_xor(s1)
+
+# TODO Get the PRNG code.
