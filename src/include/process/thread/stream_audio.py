@@ -1,4 +1,5 @@
 import logging
+import struct
 import socket
 import pyaudio
 from unittest import signals
@@ -27,7 +28,6 @@ def udp_send_audio(queue, signal_queue, queue__frames_to_save=None):
 
 
 def udp_receive_audio(queue, signal_queue, dict_queue__incoming_frames):
-	logging.debug("Type of signal_queue: %s", type(signal_queue))
 	logging.debug("About to start streaming UDP")
 	udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	udp.bind((server_config.SERVER_AUDIO_RECEIPT__ADDRESS, server_config.SERVER_AUDIO_RECEIPT__PORT))
@@ -40,6 +40,52 @@ def udp_receive_audio(queue, signal_queue, dict_queue__incoming_frames):
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	udp.close()
+
+
+# frames_to_multicast replaces frames_to_play
+def multicast_send_audio(queue, signal_queue, queue__frames_to_multicast):
+	multicast = (server_config.AUDIO_MULTICAST__ADDRESS, server_config.AUDIO_MULTICAST__PORT)
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	# sock.settimeout(server_config.AUDIO_MULTICAST__SENDER_TIMEOUT)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
+
+	while signal_queue.empty():
+		logging.debug("Entered multicast send loop")
+		multicast_data = queue__frames_to_multicast.get(block=True)
+		logging.debug("About to multicast raw data")
+		sock.sendto(multicast_data.raw_data, multicast)
+		logging.debug("Multicasted raw data")
+	signal_queue_data = signal_queue.get(block=True)
+	assert signal_queue_data == signals.SIG_FINISH
+	sock.close()
+
+
+def multicast_receive_audio(queue, signal_queue, queue__frames_to_play):
+	logging.debug("About to start receiving multicast")
+	multicast = (server_config.AUDIO_MULTICAST__ADDRESS, server_config.AUDIO_MULTICAST__PORT)
+	receiver_address = (server_config.AUDIO_MULTICAST__RECEIVER_ADDRESS, server_config.AUDIO_MULTICAST__RECEIVER_PORT)
+
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	sock.bind(receiver_address)
+
+	group = socket.inet_aton(server_config.AUDIO_MULTICAST__ADDRESS)
+	mreq = struct.pack('=4sL', group, socket.INADDR_ANY)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+	while signal_queue.empty():
+		logging.debug("Entered multicast receipt loop")
+		sound_data, address = sock.recvfrom(audio_config.CHUNK * audio_config.CHANNELS * 2)
+		audio_segment_data = AudioSegment(data=sound_data,
+										  sample_width=pyaudio.PyAudio().get_sample_size(format=audio_config.FORMAT),
+										  frame_rate=audio_config.RATE,
+										  channels=audio_config.CHANNELS)
+		queue__frames_to_play.put(audio_segment_data)
+		logging.debug("Wrote multicasted audio segment to queue")
+
+	signal_queue_data = signal_queue.get(block=True)
+	assert signal_queue_data == signals.SIG_FINISH
+	sock.close()
 
 
 def mix_audio(queue, signal_queue, dict_queue__incoming_frames, queue__frames_to_play, queue__frames_to_save):
@@ -65,22 +111,19 @@ def mix_audio(queue, signal_queue, dict_queue__incoming_frames, queue__frames_to
 	assert signal_data == signals.SIG_FINISH
 
 
-def play_audio(queue, signal_queue, queue__frames_to_play, queue__participant_count):
+def play_audio(queue, signal_queue, queue__frames_to_play):
 	# TODO Clean up pyaudio streams. Refer to </unit-test/wav_merge/record.py>
 	logging.debug("About to start playing audio")
 	p = pyaudio.PyAudio()
 	stream = p.open(format=audio_config.FORMAT, channels=audio_config.CHANNELS,
 					rate=audio_config.RATE, output=True, frames_per_buffer=audio_config.CHUNK)
 	while signal_queue.empty():
-		# TODO Use participant_count for UI.
-		participant_count = queue__participant_count.get(block=True)
-		while queue__participant_count.empty() and signal_queue.empty():
-			if not queue__frames_to_play.empty():
-				alpha = queue__frames_to_play.get(block=True)
-				# TODO Figure out when and where to decrypt the audio segments.
-				stream.write(utils.decrypt(alpha.raw_data), audio_config.CHUNK)
-			else:
-				stream.write(chr(128) * audio_config.CHUNK * 4, audio_config.CHUNK)
+		if not queue__frames_to_play.empty():
+			alpha = queue__frames_to_play.get(block=True)
+			# TODO Figure out when and where to decrypt the audio segments.
+			stream.write(utils.decrypt(alpha.raw_data), audio_config.CHUNK)
+		else:
+			stream.write(chr(128) * audio_config.CHUNK * 10, audio_config.CHUNK)
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	q_utils.clear_queue(queue__frames_to_play)
