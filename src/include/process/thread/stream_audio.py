@@ -1,7 +1,8 @@
 import logging
 import socket
 import pyaudio
-import numpy
+from Queue import Queue
+# import numpy
 from ...config import server as server_config, audio as audio_config
 from ...encrypt import utils
 from ...queue import signals, utils as q_utils
@@ -26,10 +27,16 @@ def udp_send_audio(queue, signal_queue, queue__frames_to_save=None):
 
 def udp_receive_audio(queue, signal_queue, queue__frames_to_play, queue__frames_to_save=None):
 	logging.debug("About to start streaming UDP")
+	dict_queue__incoming_frames = {}
 	udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	udp.bind((server_config.SERVER_AUDIO_RECEIPT__ADDRESS, server_config.SERVER_AUDIO_RECEIPT__PORT))
 	while signal_queue.empty():
 		sound_data, address = udp.recvfrom(audio_config.CHUNK * audio_config.CHANNELS * 2)
+		if address not in dict_queue__incoming_frames.keys():
+			dict_queue__incoming_frames[address] = Queue()
+
+		dict_queue__incoming_frames[address].put(sound_data)
+
 		if queue__frames_to_play is not None:
 			queue__frames_to_play.put(sound_data)
 		if queue__frames_to_save is not None:
@@ -58,8 +65,8 @@ def play_audio(queue, signal_queue, queue__frames_to_play, queue__participant_co
 	q_utils.clear_queue(queue__frames_to_play)
 
 
-def merge_audio_chunks(queue, participant_count):
-	new_data = 0
-	for i in range(participant_count):
-		new_data += numpy.fromstring(queue.get(block=True), numpy.int16) * (1.0/participant_count)
-	return new_data.tostring()
+# def merge_audio_chunks(queue, participant_count):
+# 	new_data = 0
+# 	for i in range(participant_count):
+# 		new_data += numpy.fromstring(queue.get(block=True), numpy.int16) * (1.0/participant_count)
+# 	return new_data.tostring()
