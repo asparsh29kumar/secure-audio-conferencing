@@ -1,4 +1,5 @@
 import logging
+import time
 import struct
 import socket
 import pyaudio
@@ -117,9 +118,15 @@ def play_audio(queue, signal_queue, queue__frames_to_play):
 	p = pyaudio.PyAudio()
 	stream = p.open(format=audio_config.FORMAT, channels=audio_config.CHANNELS,
 					rate=audio_config.RATE, output=True, frames_per_buffer=audio_config.CHUNK)
+	start_time = time.time()
+	last_purge_time = 0
 	while signal_queue.empty():
 		if not queue__frames_to_play.empty():
 			alpha = queue__frames_to_play.get(block=True)
+			purge_time = int(time.time() - start_time)
+			if purge_time % audio_config.PURGE_INTERVAL == 0 and purge_time != last_purge_time:
+				q_utils.clear_queue(queue__frames_to_play)
+				last_purge_time = purge_time
 			# TODO Figure out when and where to decrypt the audio segments.
 			stream.write(utils.decrypt(alpha.raw_data), audio_config.CHUNK)
 		else:
