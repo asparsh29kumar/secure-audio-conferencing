@@ -30,10 +30,12 @@ def string_xor(s1, s2):
 
 
 def encrypt(s1, string__expanded_key):
-	return reversed_string(string_xor(s1, string__expanded_key))
+	# return reversed_string(string_xor(s1, string__expanded_key))
+	return string_xor(s1, string__expanded_key)
 
 
 def decrypt(s1, string__expanded_key):
-	return reversed_string(string_xor(s1, string__expanded_key))
+	# return reversed_string(string_xor(s1, string__expanded_key))
+	return string_xor(s1, string__expanded_key)
 
 # TODO Get the PRNG code.
