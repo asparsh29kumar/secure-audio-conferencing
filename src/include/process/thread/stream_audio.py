@@ -9,7 +9,7 @@ from Queue import Queue
 from ...config import server as server_config, audio as audio_config
 from ...encrypt import utils
 from ...queue import signals, utils as q_utils
-from ...encrypt import WELL1024, string__expanded_key
+from ...encrypt import WELL1024, string__expanded_key, utils
 
 def udp_send_audio(queue, signal_queue, queue__frames_to_save=None):
 	p = pyaudio.PyAudio()
@@ -19,7 +19,7 @@ def udp_send_audio(queue, signal_queue, queue__frames_to_save=None):
 
 	while signal_queue.empty():
 		audio_data_clear = audio_stream.read(audio_config.CHUNK)
-		audio_data_encrypted = utils.encrypt(audio_data_clear, string__expanded_key)
+		audio_data_encrypted = utils.encrypt(audio_data_clear, utils.string__expanded_key)
 		if queue__frames_to_save is not None:
 			queue__frames_to_save.put(audio_data_clear)
 		udp.sendto(audio_data_encrypted,
@@ -127,7 +127,7 @@ def play_audio(queue, signal_queue, queue__frames_to_play):
 	while signal_queue.empty():
 		if not queue__frames_to_play.empty():
 			alpha = queue__frames_to_play.get(block=True)
-			stream.write(utils.decrypt(alpha.raw_data, string__expanded_key), audio_config.CHUNK)
+			stream.write(utils.decrypt(alpha.raw_data, utils.string__expanded_key), audio_config.CHUNK)
 			purge_time = int(time.time() - start_time)
 			if purge_time % audio_config.PURGE_INTERVAL == 0 and purge_time != last_purge_time:
 				# TODO Don't purge the entire queue. Maybe, about half-way.

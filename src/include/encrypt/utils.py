@@ -1,5 +1,5 @@
 import WELL1024
-
+string__expanded_key = "\0"
 
 def reversed_string(a_string):
 	return a_string[::-1]
