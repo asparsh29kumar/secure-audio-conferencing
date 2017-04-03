@@ -4,6 +4,7 @@ from thread.stream_audio import udp_send_audio, multicast_receive_audio, play_au
 from thread.utils import save_audio__old
 from ..queue import signals, utils
 from ..config.audio import WAVE_OUTPUT_FILENAME__SENDER
+from time import sleep
 
 
 def handle_audio_delivery(queue, signal_queue):
@@ -36,9 +37,14 @@ def handle_audio_delivery(queue, signal_queue):
 
 	thread__record_and_send_audio.setDaemon(True)
 	thread__save_audio.setDaemon(True)
+	thread__receive_audio.setDaemon(True)
+	thread__play_audio.setDaemon(True)
 	thread__record_and_send_audio.start()
 	thread__save_audio.start()
 	thread__receive_audio.start()
+	sleep(0.1)
+	# Without this sleep, an error occurs:
+	# python2.7: src/common/pa_front.c:196: InitializeHostApis: Assertion `hostApi->info.defaultInputDevice < hostApi->info.deviceCount' failed.
 	thread__play_audio.start()
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
