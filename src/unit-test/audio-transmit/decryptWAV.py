@@ -10,7 +10,9 @@ frames = []
 waveInputFile = wave.open(WAVE_INPUT_FILENAME, 'rb')
 waveOutputFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
 waveOutputFile.setnchannels(CHANNELS)
-waveOutputFile.setsampwidth(pyaudio.PyAudio().get_sample_size(FORMAT))
+p = pyaudio.PyAudio()
+waveOutputFile.setsampwidth(p.get_sample_size(FORMAT))
+p.terminate()
 waveOutputFile.setframerate(RATE)
 for i in range(waveInputFile.getnframes()):
 	frames.append(utils.sxor(waveInputFile.readframes(1)))
