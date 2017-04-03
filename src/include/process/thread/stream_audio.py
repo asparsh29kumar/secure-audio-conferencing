@@ -25,6 +25,8 @@ def udp_send_audio(queue, signal_queue, queue__frames_to_save=None):
 				   (server_config.SERVER_AUDIO_RECEIPT__ADDRESS, server_config.SERVER_AUDIO_RECEIPT__PORT))
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
+	audio_stream.close()
+	p.terminate()
 	udp.close()
 
 
@@ -73,17 +75,17 @@ def multicast_receive_audio(queue, signal_queue, queue__frames_to_play):
 	group = socket.inet_aton(server_config.AUDIO_MULTICAST__ADDRESS)
 	mreq = struct.pack('=4sL', group, socket.INADDR_ANY)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-
+	p = pyaudio.PyAudio()
 	while signal_queue.empty():
 		logging.debug("Entered multicast receipt loop")
 		sound_data, address = sock.recvfrom(audio_config.CHUNK * audio_config.CHANNELS * 2)
 		audio_segment_data = AudioSegment(data=sound_data,
-										  sample_width=pyaudio.PyAudio().get_sample_size(format=audio_config.FORMAT),
+										  sample_width=p.get_sample_size(format=audio_config.FORMAT),
 										  frame_rate=audio_config.RATE,
 										  channels=audio_config.CHANNELS)
 		queue__frames_to_play.put(audio_segment_data)
 		logging.debug("Wrote multicasted audio segment to queue")
-
+	p.terminate()
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	sock.close()
@@ -91,6 +93,7 @@ def multicast_receive_audio(queue, signal_queue, queue__frames_to_play):
 
 def mix_audio(queue, signal_queue, dict_queue__incoming_frames, queue__frames_to_play, queue__frames_to_save):
 	logging.debug("About to mix audio streams")
+	p = pyaudio.PyAudio()
 	while signal_queue.empty():
 		if len(dict_queue__incoming_frames) > 0:
 			sliced_audio_segments = []
@@ -98,7 +101,7 @@ def mix_audio(queue, signal_queue, dict_queue__incoming_frames, queue__frames_to
 			for index in range(len(dict_queue__incoming_frames)):
 				sliced_audio_segments.append(AudioSegment(
 					data=dict_queue__incoming_frames.values()[index].get(block=True),
-					sample_width=pyaudio.PyAudio().get_sample_size(format=audio_config.FORMAT),
+					sample_width=p.get_sample_size(format=audio_config.FORMAT),
 					frame_rate=audio_config.RATE,
 					channels=audio_config.CHANNELS))
 				incoming_stream_count += 1
@@ -108,12 +111,12 @@ def mix_audio(queue, signal_queue, dict_queue__incoming_frames, queue__frames_to
 				merged = merged.overlay(sliced_audio_segments[index])
 			queue__frames_to_play.put(merged)
 			queue__frames_to_save.put(merged)
+	p.terminate()
 	signal_data = signal_queue.get(block=True)
 	assert signal_data == signals.SIG_FINISH
 
 
 def play_audio(queue, signal_queue, queue__frames_to_play):
-	# TODO Clean up pyaudio streams. Refer to </unit-test/wav_merge/record.py>
 	logging.debug("About to start playing audio")
 	p = pyaudio.PyAudio()
 	stream = p.open(format=audio_config.FORMAT, channels=audio_config.CHANNELS,
@@ -123,14 +126,16 @@ def play_audio(queue, signal_queue, queue__frames_to_play):
 	while signal_queue.empty():
 		if not queue__frames_to_play.empty():
 			alpha = queue__frames_to_play.get(block=True)
+			stream.write(utils.decrypt(alpha.raw_data), audio_config.CHUNK)
 			purge_time = int(time.time() - start_time)
 			if purge_time % audio_config.PURGE_INTERVAL == 0 and purge_time != last_purge_time:
 				q_utils.clear_queue(queue__frames_to_play)
 				last_purge_time = purge_time
 			# TODO Figure out when and where to decrypt the audio segments.
-			stream.write(utils.decrypt(alpha.raw_data), audio_config.CHUNK)
 		else:
 			stream.write(chr(128) * audio_config.CHUNK * 10, audio_config.CHUNK)
 	signal_queue_data = signal_queue.get(block=True)
 	assert signal_queue_data == signals.SIG_FINISH
 	q_utils.clear_queue(queue__frames_to_play)
+	stream.close()
+	p.terminate()

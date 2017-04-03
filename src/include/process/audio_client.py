@@ -36,6 +36,8 @@ def handle_audio_delivery(queue, signal_queue):
 
 	thread__record_and_send_audio.setDaemon(True)
 	thread__save_audio.setDaemon(True)
+	thread__receive_audio.setDaemon(True)
+	thread__play_audio.setDaemon(True)
 	thread__record_and_send_audio.start()
 	thread__save_audio.start()
 	thread__receive_audio.start()
